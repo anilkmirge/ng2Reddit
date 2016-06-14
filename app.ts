@@ -9,7 +9,7 @@ class Article {
   link: string;
   votes: number;
 
-  constructor(title: string, link: string, votes: number) {
+  constructor(title: string, link: string, votes?: number) {
     this.title = title;
     this.link = link;
     this.votes = votes || 0;
@@ -23,11 +23,21 @@ class Article {
     this.votes -= 1;
   }
 
+  domain(): string {
+    try {
+      const link: string = this.link.split('//')[1];
+      return link.split('/')[0];
+    } catch (err) {
+      return null;
+    }
+  }
+
+
 }
 
 @Component({
   selector: 'reddit-article',
-  inputs: ['article'],
+  inputs: ['articleInput'],
   host: {
     class: 'row'
   },
@@ -35,7 +45,7 @@ class Article {
     <div class="four wide column center aligned votes">
       <div class="ui statistic">
         <div class="value">
-          {{ article.votes }}
+          {{ articleInput.votes }}
         </div>
         <div class="label">
           Points
@@ -43,9 +53,11 @@ class Article {
       </div>
     </div>
     <div class="twelve wide column">
-      <a class="ui large header" href="{{ article.link }}">
-        {{ article.title }}
+      <a class="ui large header" href="{{ articleInput.link }}">
+        {{ articleInput.title }}
       </a>
+      
+      <div class="meta">({{ articleInput.domain() }})</div>
       <ul class="ui big horizontal list voters">
         <li class="item">
           <a href (click) = "$event.preventDefault() || voteUp()">
@@ -64,20 +76,15 @@ class Article {
   `
 })
 
-
 class ArticleComponent {
-  article: Article;
-
-  constructor() {
-
-  }
+  articleInput: Article;
 
   voteUp(): void {
-    this.article.voteUp();
+    this.articleInput.voteUp();
   }
 
   voteDown(): void {
-    this.article.voteDown();
+    this.articleInput.voteDown();
   }
 
 }
@@ -94,7 +101,7 @@ class ArticleComponent {
     </div>
     <div class="field">
       <label for="link">Link:</label>
-      <input name="link" #newlink>
+      <input name="link" #newlink> 
     </div>
     <button (click)="addArticle(newtitle, newlink)"
       class="ui positive right floated button">
@@ -103,7 +110,7 @@ class ArticleComponent {
   </form>
   <!-- adding the article list -->
   <div class="ui grid posts">
-    <reddit-article *ngFor="#articleItem of articles" [article]="articleItem"></reddit-article>
+    <reddit-article *ngFor="#articleItem of sortedArticles()" [articleInput]="articleItem"></reddit-article>
   </div>
   `
 })
@@ -119,7 +126,14 @@ class RedditApp {
   }
 
   addArticle(title: HTMLInputElement, link: HTMLInputElement): void {
-    console.log(`Adding article title: ${title.value} and link: ${link.value}`);
+    console.log(`Adding article title: `+title.value+` and link: `+link.value);
+    this.articles.push(new Article(title.value, link.value, 0));
+    title.value = '';
+    link.value= '';
+  }
+  
+  sortedArticles(): Article[] {
+    return this.articles.sort((a: Article, b: Article) => b.votes - a.votes);
   }
 }
 
